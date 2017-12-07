@@ -1,6 +1,7 @@
 package com.flightaware.android.flightfeeder.analyzers.dump1090;
 
 import android.location.Location;
+import android.location.LocationManager;
 import android.text.TextUtils;
 import android.util.LruCache;
 import android.util.SparseArray;

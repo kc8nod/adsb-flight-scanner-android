@@ -14,6 +14,8 @@ import android.content.pm.PackageManager;
 import android.content.res.Configuration;
 import android.hardware.usb.UsbDevice;
 import android.hardware.usb.UsbManager;
+import android.location.Location;
+import android.location.LocationManager;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.IBinder;
@@ -28,6 +30,7 @@ import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.text.TextUtils;
+import android.util.Log;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.AdapterView;
@@ -38,7 +41,9 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import com.flightaware.android.flightfeeder.App;
+import com.flightaware.android.flightfeeder.PCA9685Servo;
 import com.flightaware.android.flightfeeder.R;
+import com.flightaware.android.flightfeeder.ServoPointer;
 import com.flightaware.android.flightfeeder.adapters.PlaneAdapter;
 import com.flightaware.android.flightfeeder.analyzers.Aircraft;
 import com.flightaware.android.flightfeeder.analyzers.Analyzer;
@@ -47,12 +52,18 @@ import com.flightaware.android.flightfeeder.services.ControllerService;
 import com.flightaware.android.flightfeeder.services.LocationService;
 import com.flightaware.android.flightfeeder.util.MovingAverage;
 import com.google.android.gms.maps.model.LatLng;
+import com.google.android.things.pio.PeripheralManagerService;
 
 import java.util.ArrayList;
 
 public class MainActivity extends AppCompatActivity implements
         OnNavigationItemSelectedListener, OnItemClickListener,
         ServiceConnection {
+    //todo store these channel values in prefs
+    private static final int AZIM_SERVO_CHANNEL = 0;
+    private static final int ELEV_SERVO_CHANNEL = 1;
+
+    private static final String TAG = MainActivity.class.getSimpleName();
 
     public static final String ACTION_LOGIN = "com.flightaware.android.flightfeeder.LOGIN";
     public static final String ACTION_MODE_CHANGE = "com.flightaware.android.flightfeeder.MODE_CHANGE";
@@ -83,6 +94,7 @@ public class MainActivity extends AppCompatActivity implements
     private ImageView mTx;
     private ControllerService mService;
     private TextView mUsernameView;
+    private ServoPointer mPointer;
 
     @Override
     public void onBackPressed() {
@@ -182,6 +194,18 @@ public class MainActivity extends AppCompatActivity implements
         mFilter.addAction(ACTION_MODE_CHANGE);
         mFilter.addAction(ACTION_LOGIN);
 
+
+        try {
+            PeripheralManagerService peripheralManagerService = new PeripheralManagerService();
+
+            PCA9685Servo servo = new PCA9685Servo(PCA9685Servo.PCA9685_ADDRESS, peripheralManagerService);
+            //todo put the servo min/max values in prefs
+            servo.setServoMinMaxPwm(0, 180, 145, 550);
+            mPointer = new ServoPointer(servo, AZIM_SERVO_CHANNEL, ELEV_SERVO_CHANNEL);
+        } catch (Exception e) {
+            Log.e(TAG, "Error initializing PCA9685Servo", e);
+        }
+
         mReceiver = new BroadcastReceiver() {
 
             @Override
@@ -209,6 +233,11 @@ public class MainActivity extends AppCompatActivity implements
                         mPlanes.clear();
                         mPlanes.addAll(RecentAircraftCache
                                 .getActiveAircraftList(true));
+
+                        Aircraft target = nearestAircraft();
+                        if(target != null) {
+                            mPointer.set(target.getAzimuth(LocationService.getLocation()), target.getElevation(LocationService.getLocation()));
+                        }
 
                         mPlaneAdapter.notifyDataSetChanged();
                     } else if (action.equals(ACTION_MODE_CHANGE)) {
@@ -467,5 +496,22 @@ public class MainActivity extends AppCompatActivity implements
 
     @Override
     public void onServiceDisconnected(ComponentName name) {
+    }
+
+    private Aircraft nearestAircraft(){
+        Aircraft nearest = null;
+
+        for(Aircraft plane: mPlanes) {
+            if(plane.getLongitude() != null && plane.getLatitude() != null) {
+                if(nearest == null) {
+                    nearest = plane;
+                } else {
+                    if(plane.getDistance(LocationService.getLocation()) < nearest.getDistance(LocationService.getLocation())) {
+                        nearest = plane;
+                    }
+                }
+            }
+        }
+        return nearest;
     }
 }

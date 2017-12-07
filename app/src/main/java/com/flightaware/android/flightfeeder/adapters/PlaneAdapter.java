@@ -17,6 +17,7 @@ import android.widget.TextView;
 import com.flightaware.android.flightfeeder.App;
 import com.flightaware.android.flightfeeder.R;
 import com.flightaware.android.flightfeeder.analyzers.Aircraft;
+import com.flightaware.android.flightfeeder.services.LocationService;
 
 public class PlaneAdapter extends BaseAdapter {
 
@@ -34,6 +35,9 @@ public class PlaneAdapter extends BaseAdapter {
 		public TextView speed;
 		public TextView heading;
 		public ImageView uat;
+		public TextView azimuth;
+		public TextView elevation;
+        public TextView distance;
 	}
 
 	private ArrayList<Aircraft> mPlaneList;
@@ -89,6 +93,9 @@ public class PlaneAdapter extends BaseAdapter {
 			holder.speed = (TextView) view.findViewById(R.id.speed);
 			holder.heading = (TextView) view.findViewById(R.id.heading);
 			holder.uat = (ImageView) view.findViewById(R.id.uat_flag);
+			holder.azimuth = (TextView) view.findViewById(R.id.azimuth);
+			holder.elevation = (TextView) view.findViewById(R.id.elevation);
+            holder.distance = (TextView) view.findViewById(R.id.distance);
 		} else
 			holder = (ViewHolder) view.getTag();
 
@@ -151,7 +158,20 @@ public class PlaneAdapter extends BaseAdapter {
 		else
 			view.setBackgroundResource(R.color.primary_light);
 
-		return view;
+		if(aircraft.hasLocation()) {
+			holder.azimuth.setText(String.format("%.0f",
+					aircraft.getAzimuth(LocationService.getLocation())));
+			holder.elevation.setText(String.format("%.0f",
+					aircraft.getElevation(LocationService.getLocation())));
+			holder.distance.setText(String.format("%.0f",
+					aircraft.getDistance(LocationService.getLocation())));
+		} else {
+			holder.azimuth.setText(null);
+			holder.elevation.setText(null);
+			holder.distance.setText(null);
+		}
+
+        return view;
 	}
 
 	@Override

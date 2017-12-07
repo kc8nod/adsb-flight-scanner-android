@@ -8,6 +8,7 @@ import android.content.Intent;
 import android.content.SharedPreferences.Editor;
 import android.content.pm.PackageManager;
 import android.location.Location;
+import android.location.LocationManager;
 import android.os.Bundle;
 import android.os.IBinder;
 import android.os.PowerManager;
@@ -165,5 +166,15 @@ public class LocationService extends Service implements
 	@Override
 	public int onStartCommand(Intent intent, int flags, int startId) {
 		return Service.START_STICKY;
+	}
+
+	public static Location getLocation() {
+		if(sLocation.latitude == 0 || sLocation.longitude == 0) {
+			return null;
+		}
+		Location result = new Location(LocationManager.PASSIVE_PROVIDER);
+		result.setLatitude(sLocation.latitude);
+		result.setLongitude(sLocation.longitude);
+		return result;
 	}
 }

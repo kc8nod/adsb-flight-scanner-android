@@ -1,9 +1,12 @@
 package com.flightaware.android.flightfeeder.analyzers;
 
+import android.location.Location;
+import android.location.LocationManager;
 import android.text.TextUtils;
 import android.util.LruCache;
 
 import com.flightaware.android.flightfeeder.analyzers.dump1090.ModeSMessage;
+import com.google.android.gms.maps.model.LatLng;
 
 import java.util.Locale;
 import java.util.Map;
@@ -11,7 +14,8 @@ import java.util.UUID;
 
 public class Aircraft {
 
-	private Integer mAltitude;
+    public static final int LIFETIME = 300000;
+    private Integer mAltitude;
 	private boolean mAltitudeHoldEnabled;
 	private String mAltitudeSource;
 	private long mAltitudeTimestamp;
@@ -48,6 +52,7 @@ public class Aircraft {
 	private long mVelocityTimestamp;
 	private boolean mVerticalNavEnabled;
 	private Integer mVerticalRate;
+	private long mLatLonTimestamp;
 
 	public Aircraft() {
 	}
@@ -196,13 +201,13 @@ public class Aircraft {
 		if (TextUtils.isEmpty(mIcao))
 			return false;
 
-		if (mAltitude == null || timestamp - mAltitudeTimestamp > 30000)
+		if (mAltitude == null || timestamp - mAltitudeTimestamp > LIFETIME)
 			return false;
 
-		if (mHeading == null || timestamp - mHeadingTimestamp > 30000)
+		if (mHeading == null || timestamp - mHeadingTimestamp > LIFETIME)
 			return false;
 
-		if (mVelocity == null || timestamp - mVelocityTimestamp > 30000)
+		if (mVelocity == null || timestamp - mVelocityTimestamp > LIFETIME)
 			return false;
 
 		return mReady;
@@ -271,10 +276,12 @@ public class Aircraft {
 
 	public void setLatitude(Double latitude) {
 		mLatitude = latitude;
+		mLatLonTimestamp = System.currentTimeMillis();
 	}
 
 	public void setLongitude(Double longitude) {
 		mLongitude = longitude;
+		mLatLonTimestamp = System.currentTimeMillis();
 	}
 
 	public void setMessageCount(int messageCount) {
@@ -349,4 +356,34 @@ public class Aircraft {
 	public void setVerticalRate(Integer verticalRate) {
 		mVerticalRate = verticalRate;
 	}
+
+	public Location getProjectedLocation() {
+        Location result = new Location(LocationManager.PASSIVE_PROVIDER);
+		double ewVelocity = Math.sin(mHeading) * mVelocity; // knots
+		double nsVelocity = Math.cos(mHeading) * mVelocity;
+        double interval = (System.currentTimeMillis() - mLatLonTimestamp)/3600000; // hours
+        double ewDistance = ewVelocity * interval; // nmi
+        double nsDistance = nsVelocity * interval; // nmi
+        result.setLatitude(mLatitude + (nsDistance/60));
+        double longitudeScale = (90 - Math.abs(mLatitude))/90;
+        result.setLongitude(mLongitude + (longitudeScale * ewDistance/60));
+        return result;
+    }
+
+    public double getDistance(Location loc) {
+        return loc.distanceTo(this.getProjectedLocation());
+    }
+
+    public double getAzimuth(Location loc) {
+        return loc.bearingTo(this.getProjectedLocation());
+    }
+
+    public double getElevation(Location loc) {
+        double altitudeMeters = this.getAltitude() * 0.3048;
+        return Math.toDegrees(Math.atan(altitudeMeters / this.getDistance(loc)));
+    }
+
+    public boolean hasLocation() {
+        return mLatitude != null && mLongitude != null;
+    }
 }

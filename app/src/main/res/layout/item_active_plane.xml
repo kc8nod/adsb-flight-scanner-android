@@ -94,4 +94,33 @@
         android:gravity="center"
         android:textSize="@dimen/font_size" />
 
+
+    <TextView
+        android:id="@+id/azimuth"
+        android:layout_width="0dip"
+        android:layout_height="wrap_content"
+        android:layout_margin="2dip"
+        android:layout_weight="1"
+        android:gravity="center"
+        android:textSize="@dimen/font_size" />
+
+
+    <TextView
+        android:id="@+id/elevation"
+        android:layout_width="0dip"
+        android:layout_height="wrap_content"
+        android:layout_margin="2dip"
+        android:layout_weight="1"
+        android:gravity="center"
+        android:textSize="@dimen/font_size" />
+
+    <TextView
+        android:id="@+id/distance"
+        android:layout_width="0dip"
+        android:layout_height="wrap_content"
+        android:layout_margin="2dip"
+        android:layout_weight="1"
+        android:gravity="center"
+        android:textSize="@dimen/font_size" />
+
 </LinearLayout>
