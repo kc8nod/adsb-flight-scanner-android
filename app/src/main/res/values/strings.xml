@@ -52,4 +52,7 @@
     <string name="prefs_beast_format_title">Export Beast Format</string>
     <string name="prefs_beast_format_summary">Data will be exported on TCP port 30005</string>
 
+    <string name="title_activity_startup">PlaneSpotter</string>
+    <string name="startup_text">Aim the pointer due north</string>
+
 </resources>

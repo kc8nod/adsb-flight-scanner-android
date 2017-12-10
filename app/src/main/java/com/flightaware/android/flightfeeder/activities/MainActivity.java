@@ -59,9 +59,6 @@ import java.util.ArrayList;
 public class MainActivity extends AppCompatActivity implements
         OnNavigationItemSelectedListener, OnItemClickListener,
         ServiceConnection {
-    //todo store these channel values in prefs
-    private static final int AZIM_SERVO_CHANNEL = 0;
-    private static final int ELEV_SERVO_CHANNEL = 1;
 
     private static final String TAG = MainActivity.class.getSimpleName();
 
@@ -94,7 +91,6 @@ public class MainActivity extends AppCompatActivity implements
     private ImageView mTx;
     private ControllerService mService;
     private TextView mUsernameView;
-    private ServoPointer mPointer;
 
     @Override
     public void onBackPressed() {
@@ -195,17 +191,6 @@ public class MainActivity extends AppCompatActivity implements
         mFilter.addAction(ACTION_LOGIN);
 
 
-        try {
-            PeripheralManagerService peripheralManagerService = new PeripheralManagerService();
-
-            PCA9685Servo servo = new PCA9685Servo(PCA9685Servo.PCA9685_ADDRESS, peripheralManagerService);
-            //todo put the servo min/max values in prefs
-            servo.setServoMinMaxPwm(0, 180, 145, 550);
-            mPointer = new ServoPointer(servo, AZIM_SERVO_CHANNEL, ELEV_SERVO_CHANNEL);
-        } catch (Exception e) {
-            Log.e(TAG, "Error initializing PCA9685Servo", e);
-        }
-
         mReceiver = new BroadcastReceiver() {
 
             @Override
@@ -236,7 +221,7 @@ public class MainActivity extends AppCompatActivity implements
 
                         Aircraft target = nearestAircraft();
                         if(target != null) {
-                            mPointer.set(target.getAzimuth(LocationService.getLocation()), target.getElevation(LocationService.getLocation()));
+                            App.sPointer.set(target.getAzimuth(LocationService.getLocation()), target.getElevation(LocationService.getLocation()));
                         }
 
                         mPlaneAdapter.notifyDataSetChanged();

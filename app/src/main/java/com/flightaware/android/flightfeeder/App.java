@@ -12,12 +12,20 @@ import android.net.NetworkInfo;
 import android.os.SystemClock;
 import android.preference.PreferenceManager;
 import android.support.v4.content.LocalBroadcastManager;
+import android.util.Log;
 
 import com.flightaware.android.flightfeeder.analyzers.NanoWebServer;
 import com.flightaware.android.flightfeeder.receivers.ConnectivityChangedReceiver;
+import com.google.android.things.pio.PeripheralManagerService;
 
 public class App extends Application implements
 		OnSharedPreferenceChangeListener {
+
+    private static final String TAG = App.class.getSimpleName();
+
+    //todo store these channel values in prefs
+    private static final int AZIM_SERVO_CHANNEL = 0;
+    private static final int ELEV_SERVO_CHANNEL = 1;
 
 	public static LocalBroadcastManager sBroadcastManager;
 	private static ComponentName sComponentName;
@@ -31,6 +39,7 @@ public class App extends Application implements
 	public static long sStartTime;
 	public static String sVersion;
 	public static NanoWebServer sWebServer;
+	public static ServoPointer sPointer;
 
 	public static boolean isInternetAvailable() {
 		long now = SystemClock.uptimeMillis();
@@ -117,6 +126,19 @@ public class App extends Application implements
 				SystemClock.sleep(5000);
 			}
 		}.start();
+
+		try {
+			PeripheralManagerService peripheralManagerService = new PeripheralManagerService();
+
+			PCA9685Servo servo = new PCA9685Servo(PCA9685Servo.PCA9685_ADDRESS, peripheralManagerService);
+			//todo put the servo min/max values in prefs
+			servo.setServoMinMaxPwm(0, 180, 145, 550);
+			sPointer = new ServoPointer(servo, AZIM_SERVO_CHANNEL, ELEV_SERVO_CHANNEL);
+		} catch (Exception e) {
+			Log.e(TAG, "Error initializing PCA9685Servo", e);
+		}
+
+
 	}
 
 	@Override
